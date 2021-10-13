@@ -16,6 +16,7 @@ public class TouchScreen : MonoBehaviour, IDragHandler, IBeginDragHandler
 
     public void OnDrag(PointerEventData eventData)
     {
+
         if (GameManager.Inst.Loading) return;
 
         if (HV) // Horizontal
@@ -29,8 +30,8 @@ public class TouchScreen : MonoBehaviour, IDragHandler, IBeginDragHandler
         if(!isDrag)
         {
             isDrag = true;
-            GameManager.Inst.MoveBlock(HV, isPlma);
-            Invoke("EndDrag", 1f);
+            StartCoroutine(GameManager.Inst.MoveBlock(HV, isPlma));
+            Invoke("EndDrag", 0.7f);
 
         }
     }
