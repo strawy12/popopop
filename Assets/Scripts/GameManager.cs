@@ -14,28 +14,52 @@ public class GameManager : MonoSingleTon<GameManager>
     private Block[,] blockPosition = new Block[5, 5];
     private Block[,] scorePosition = new Block[5, 5];
     private UIManager uiManager = null;
+    private ImageManager imageManager = null;
     private bool[] bonusCheck = new bool[5];
     private int bonusCnt = 0;
-    public enum EObjectType {block, score };
+    public enum EObjectType { block, score };
+    public enum EBlockState
+    {
+        NORMAL,
+        TOP,
+        RIGHT,
+        TOP_RIGHT,
+        DOWN,
+        TOP_DOWN,
+        RIGHT_DOWN,
+        TOP_RIGHT_DOWN,
+        LEFT,
+        TOP_LEFT,
+        RIGHT_LEFT,
+        TOP_RIGHT_LEFT,
+        LEFT_DOWN,
+        TOP_LEFT_DOWN,
+        RIGHT_LEFT_DOWN,
+        TOP_RIGHT_LEFT_DOWN
+    }
     private Block player = null;
     private Dictionary<EObjectType, Queue<GameObject>> poolingDict = new Dictionary<EObjectType, Queue<GameObject>>();
     private bool isLoading = false;
     private bool isGameOver = false;
     private int score = 0;
     public UIManager UI { get { return uiManager; } }
+    public ImageManager Image { get { return imageManager; } }
+    public Block Player { get { return player; } }
     public bool Loading { get { return isLoading; } }
     int moveCnt = 0;
 
     private void Update()
     {
-        if (GameOver())
+        if (GameOver() && !isGameOver)
         {
             isGameOver = true;
+            UI.ActiveGameOVerPanal(true);
         }
     }
     private void Awake()
     {
         uiManager = GetComponent<UIManager>();
+        imageManager = GetComponent<ImageManager>();
         poolingDict.Add(EObjectType.block, new Queue<GameObject>());
         poolingDict.Add(EObjectType.score, new Queue<GameObject>());
     }
@@ -85,7 +109,7 @@ public class GameManager : MonoSingleTon<GameManager>
         int bonus = Random.Range(1, 11);
         Block block = null;
         nums = RandomNumPick();
-        
+
         if (poolingDict[EObjectType.block].Count > 0)
         {
             block = poolingDict[EObjectType.block].Dequeue().GetComponent<Block>();
@@ -99,12 +123,12 @@ public class GameManager : MonoSingleTon<GameManager>
         block.xPos = nums[0];
         block.yPos = nums[1];
         blockPosition[nums[0], nums[1]] = block;
-        if (bonus == 5 && !isStart)
+        if (bonus != 5)
         {
             block.isBonus = true;
         }
         block.SetSpawnCoords();
-
+        CheckBlockState();
     }
 
     public void ScorePositionEmpty(int x, int y)
@@ -117,7 +141,7 @@ public class GameManager : MonoSingleTon<GameManager>
         poolingDict[type].Enqueue(obj);
     }
 
-    private void SpawnScore(int x, int y)
+    public void SpawnScore(int x, int y)
     {
         Block score = null;
         if (poolingDict[EObjectType.score].Count > 0)
@@ -147,10 +171,11 @@ public class GameManager : MonoSingleTon<GameManager>
         } while (blockPosition[x, y] != null || CheckSpawn(x, y));
         return new int[2] { x, y };
     }
+    
 
     private bool CheckSpawn(int x, int y)
     {
-        if(CheckMaxBlock() && CheckLine(x, y))
+        if (CheckMaxBlock() && CheckLine(x, y))
         {
             return false;
         }
@@ -160,7 +185,7 @@ public class GameManager : MonoSingleTon<GameManager>
 
     private bool CheckScorePos(int x, int y)
     {
-        if(scorePosition[x,y] != null)
+        if (scorePosition[x, y] != null)
         {
             return true;
         }
@@ -173,9 +198,9 @@ public class GameManager : MonoSingleTon<GameManager>
 
         for (int i = 0; i < 5; i++)
         {
-            for(int j = 0; j < 5; j++)
+            for (int j = 0; j < 5; j++)
             {
-                if(blockPosition[i,j] == null)
+                if (blockPosition[i, j] == null)
                 {
                     int[] pos = { i, j };
                     blockPosList.Add(pos);
@@ -195,7 +220,7 @@ public class GameManager : MonoSingleTon<GameManager>
         }
 
 
-        if(blockPosList.Count == 0)
+        if (blockPosList.Count == 0)
         {
             return true;
         }
@@ -277,7 +302,19 @@ public class GameManager : MonoSingleTon<GameManager>
         yield return new WaitForSeconds(0.2f);
 
         CheckMate();
-        
+        CheckBlockState();
+    }
+
+    private void CheckBlockState()
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            for (int j = 0; j < 5; j++)
+            {
+                if (CheckBlock(i, j) || CheckPlayer(i,j)) continue;
+                blockPosition[i, j].SetBlockState();
+            }
+        }
     }
     private bool GameOver()
     {
@@ -323,15 +360,14 @@ public class GameManager : MonoSingleTon<GameManager>
             {
                 newBlock = blockPosition[i, j];
                 blockPosition[i, j] = null;
-                if(newBlock.isBonus)
+                if (newBlock.isBonus)
                 {
                     BonusActive();
-                    newBlock.isBonus = false;
-
                 }
                 newBlock.Despawn();
                 SpawnScore(i, j);
             }
+            CheckBonus();
         }
     }
 
@@ -360,37 +396,105 @@ public class GameManager : MonoSingleTon<GameManager>
                 if (newBlock.isBonus)
                 {
                     BonusActive();
-                    newBlock.isBonus = false;
                 }
                 newBlock.Despawn();
                 SpawnScore(j, i);
             }
+            CheckBonus();
         }
     }
 
-    private void BonusActive()
+    private void CheckBonus()
     {
-        bonusCheck[bonusCnt] = true;
-        UI.ActiveBonusText(bonusCnt);
-        bonusCnt++;
+        
         if (bonusCnt >= 5)
         {
             bonusCheck = new bool[5];
             bonusCnt = 0;
             for(int i = 0; i < 5; i++)
             {
-                if(blockPosition[player.xPos, i] != null && blockPosition[player.xPos, i] != player)
-                {
-                    blockPosition[player.xPos, i].Despawn();
-                    blockPosition[player.xPos, i] = null;
-                }
-                if(blockPosition[i, player.yPos] != null && blockPosition[i, player.yPos] != player)
-                {
-                    blockPosition[i, player.yPos].Despawn();
-                    blockPosition[i, player.yPos] = null;
-                }
+                UI.ActiveBonusText(i, false);
+
             }
+
+            StartCoroutine(BonusEffect());
         }
+    }
+    private void BonusActive()
+    {
+        if (bonusCnt >= 5) return;
+        bonusCheck[bonusCnt] = true;
+        UI.ActiveBonusText(bonusCnt, true);
+        bonusCnt++;
+
+    }
+
+    private IEnumerator BonusEffect()
+    {
+        List<Block> topBlockList = new List<Block>();
+        List<Block> leftBlockList = new List<Block>();
+        List<Block> rightBlockList = new List<Block>();
+        List<Block> downBlockList = new List<Block>();
+        bool breakBool = false;
+        isLoading = true;
+        for (int i = 0; i < 5; i++)
+        {
+            if (player.yPos - i >= 0 && blockPosition[player.xPos, player.yPos - i] != null && blockPosition[player.xPos, player.yPos - i] != player)
+            {
+                downBlockList.Add(blockPosition[player.xPos, player.yPos - i]);
+                blockPosition[player.xPos, player.yPos - i] = null;
+            }
+            if (player.yPos + i < 5 && blockPosition[player.xPos, player.yPos + i] != null && blockPosition[player.xPos, player.yPos + i] != player)
+            {
+                topBlockList.Add(blockPosition[player.xPos, player.yPos + i]);
+                blockPosition[player.xPos, player.yPos + i] = null;
+
+            }
+            if (player.xPos - i >= 0 && blockPosition[player.xPos - i, player.yPos] != null && blockPosition[player.xPos - i, player.yPos] != player)
+            {
+                leftBlockList.Add(blockPosition[player.xPos - i, player.yPos]);
+                blockPosition[player.xPos - i, player.yPos] = null;
+
+            }
+            if (player.xPos + i < 5 && blockPosition[player.xPos + i, player.yPos] != null && blockPosition[player.xPos + i, player.yPos] != player)
+            {
+                rightBlockList.Add(blockPosition[player.xPos + i, player.yPos]);
+                blockPosition[player.xPos + i, player.yPos] = null;
+
+            }
+
+        }
+
+        for (int i = 0; i < 5; i++)
+        {
+            if(i < topBlockList.Count)
+            {
+                topBlockList[i].Despawn();
+                breakBool = true;
+            }
+            if (i < downBlockList.Count)
+            {
+                downBlockList[i].Despawn();
+                breakBool = true;
+            }
+            if (i < rightBlockList.Count)
+            {
+                rightBlockList[i].Despawn();
+                breakBool = true;
+            }
+            if (i < leftBlockList.Count)
+            {
+                leftBlockList[i].Despawn();
+                breakBool = true;
+            }
+            if(!breakBool)
+            {
+                isLoading = false;
+                yield break;
+            }
+            yield return new WaitForSeconds(0.5f);
+        }
+        isLoading = false;
     }
 
     #region PosSetting
@@ -472,10 +576,20 @@ public class GameManager : MonoSingleTon<GameManager>
         }
     }
 
-    private bool CheckBlock(int x, int y)
+    public bool CheckBlock(int x, int y)
     {
         if (x < 0 || x > 4 || y < 0 || y > 4) return true;
         if (blockPosition[x, y] == null)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    public bool CheckPlayer(int x, int y)
+    {
+        if (x < 0 || x > 4 || y < 0 || y > 4) return true;
+        if (blockPosition[x, y] == player)
         {
             return true;
         }
