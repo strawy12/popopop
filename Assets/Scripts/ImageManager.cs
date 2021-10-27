@@ -8,7 +8,7 @@ public class ImageManager : MonoBehaviour
     private Sprite[] blockSprites = null;
 
 
-    private string spriteKey = "puyo-materials";
+    private string spriteKey = "PuyoZZik";
 
     private void Awake()
     {

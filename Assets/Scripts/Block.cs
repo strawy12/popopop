@@ -10,6 +10,8 @@ public class Block : MonoBehaviour
 {
     public EBlockState state;
     public bool isBonus;
+    public bool isNesting;
+    public int nestingCnt;
     public int xPos;
     public int yPos;
     protected SpriteRenderer spriteRenderer = null;
@@ -31,7 +33,7 @@ public class Block : MonoBehaviour
         }
         if (isBonus)
         {
-            spriteRenderer.color = Color.green;
+            spriteRenderer.color = Color.yellow;
         }
         else
         {
@@ -50,7 +52,7 @@ public class Block : MonoBehaviour
         string state = "";
         if (!GameManager.Inst.CheckBlock(xPos, yPos + 1) && !GameManager.Inst.CheckPlayer(xPos, yPos + 1))
         {
-            if(state == "")
+            if (state == "")
             {
                 state = "TOP";
             }
@@ -94,7 +96,7 @@ public class Block : MonoBehaviour
             }
         }
 
-        if(state == "")
+        if (state == "")
         {
             state = "NORMAL";
         }
@@ -122,29 +124,41 @@ public class Block : MonoBehaviour
         return new Vector2(xPos, yPos);
     }
 
-    public virtual void Despawn()
+    public virtual void Despawn(bool colorChanged = false)
     {
-        if(effectSystem == null)
+        if (effectSystem == null)
         {
             effectSystem = transform.GetChild(0).GetComponent<ParticleSystem>();
             pm = effectSystem.main;
         }
 
-        StartCoroutine(DespawnEffect());
+        StartCoroutine(DespawnEffect(colorChanged));
     }
 
-    private IEnumerator DespawnEffect()
+    public void SetEffectColor(Color color)
+    {
+        pm.startColor = color;
+    }
+    private IEnumerator DespawnEffect(bool colorChanged = false)
     {
         spriteRenderer.enabled = false;
 
-        if (isBonus)
+        if(colorChanged)
         {
-            pm.startColor = Color.green;
+            SetEffectColor(Color.cyan);
         }
         else
         {
-            pm.startColor = Color.red;
+            if (isBonus)
+            {
+                SetEffectColor(Color.yellow);
+            }
+            else
+            {
+                SetEffectColor(Color.white);
+            }
         }
+        
 
         effectSystem.Play();
         yield return new WaitForSeconds(0.5f);

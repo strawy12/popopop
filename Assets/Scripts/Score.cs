@@ -7,13 +7,9 @@ public class Score : Block
 {
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.CompareTag("Player"))
+        if (collision.CompareTag("Player") || collision.CompareTag("Block"))
         {
             GameManager.Inst.AddScore(1);
-            Despawn();
-        }
-        else if(collision.CompareTag("Block"))
-        {
             Despawn();
         }
     }
@@ -24,7 +20,7 @@ public class Score : Block
         spriteRenderer.color = Color.yellow;
     }
 
-    public override void Despawn()
+    public override void Despawn(bool colorChanged = false)
     {
         gameObject.SetActive(false);
         GameManager.Inst.PoolEnqueue(EObjectType.score, gameObject);

@@ -8,6 +8,7 @@ using DG.Tweening;
 public class UIManager : MonoBehaviour
 {
     [SerializeField] private Text scoreText = null;
+    [SerializeField] private Text highScoreText = null;
     [SerializeField] private GameObject bonusTexts = null;
     [SerializeField] private GameObject sideWalls = null;
     [SerializeField] private GameObject gameOverPanal = null;
@@ -59,5 +60,10 @@ public class UIManager : MonoBehaviour
     public void SetScoreText(int score)
     {
         scoreText.text = string.Format("Score: {0}", score);
+        if(PlayerPrefs.GetInt("HighScore") < score)
+        {
+            PlayerPrefs.SetInt("HighScore", score);
+            highScoreText.text = string.Format("HighScore: {0}", PlayerPrefs.GetInt("HighScore"));
+        }
     }
 }

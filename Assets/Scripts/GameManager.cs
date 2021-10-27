@@ -16,6 +16,7 @@ public class GameManager : MonoSingleTon<GameManager>
     private UIManager uiManager = null;
     private ImageManager imageManager = null;
     private bool[] bonusCheck = new bool[5];
+    private bool pushed = false;
     private int bonusCnt = 0;
     public enum EObjectType { block, score };
     public enum EBlockState
@@ -123,7 +124,7 @@ public class GameManager : MonoSingleTon<GameManager>
         block.xPos = nums[0];
         block.yPos = nums[1];
         blockPosition[nums[0], nums[1]] = block;
-        if (bonus != 5)
+        if (bonus == 5)
         {
             block.isBonus = true;
         }
@@ -171,7 +172,7 @@ public class GameManager : MonoSingleTon<GameManager>
         } while (blockPosition[x, y] != null || CheckSpawn(x, y));
         return new int[2] { x, y };
     }
-    
+
 
     private bool CheckSpawn(int x, int y)
     {
@@ -253,6 +254,65 @@ public class GameManager : MonoSingleTon<GameManager>
         return false;
     }
 
+    public void Push()
+    {
+
+    }
+
+    public void Pull()
+    {
+        Block newBlock = null;
+        Block mainBlock = null;
+        int xPos = 0;
+        int x = player.xPos + 1;
+        int y = player.yPos;
+        int nestingCnt = 0;
+
+        for (int i = 4; i >= x; i--)
+        {
+            if (!CheckBlock(i, y) && blockPosition[i, y] != player)
+            {
+                if (blockPosition[i, y].isNesting)
+                {
+                    xPos = CheckXMinus(i, y);
+                    newBlock = blockPosition[i, y];
+                    blockPosition[i, y] = null;
+                    blockPosition[xPos, y] = newBlock;
+                    newBlock.xPos = xPos;
+                    newBlock.yPos = y;
+                    newBlock.SetMoveCoords();
+                    continue;
+                }
+
+                if (mainBlock == null)
+                {
+
+                    mainBlock = blockPosition[i, y];
+                    mainBlock.xPos = x;
+                    mainBlock.yPos = y;
+                }
+                else
+                {
+                    newBlock = blockPosition[i, y];
+                    blockPosition[i, y] = null;
+                    newBlock.xPos = x;
+                    newBlock.yPos = y;
+                    newBlock.SetMoveCoords();
+                    newBlock.Despawn();
+                    nestingCnt++;
+                }
+
+            }
+        }
+        if(mainBlock != null)
+        {
+            mainBlock.nestingCnt = nestingCnt;
+            mainBlock.isNesting = true;
+            blockPosition[x, y] = mainBlock;
+            mainBlock.SetMoveCoords();
+        }
+    }
+
     public IEnumerator MoveBlock(bool isHV, bool isPlma)
     {
         if (isGameOver) yield break;
@@ -311,7 +371,7 @@ public class GameManager : MonoSingleTon<GameManager>
         {
             for (int j = 0; j < 5; j++)
             {
-                if (CheckBlock(i, j) || CheckPlayer(i,j)) continue;
+                if (CheckBlock(i, j) || CheckPlayer(i, j)) continue;
                 blockPosition[i, j].SetBlockState();
             }
         }
@@ -406,12 +466,12 @@ public class GameManager : MonoSingleTon<GameManager>
 
     private void CheckBonus()
     {
-        
+
         if (bonusCnt >= 5)
         {
             bonusCheck = new bool[5];
             bonusCnt = 0;
-            for(int i = 0; i < 5; i++)
+            for (int i = 0; i < 5; i++)
             {
                 UI.ActiveBonusText(i, false);
 
@@ -467,27 +527,27 @@ public class GameManager : MonoSingleTon<GameManager>
 
         for (int i = 0; i < 5; i++)
         {
-            if(i < topBlockList.Count)
+            if (i < topBlockList.Count)
             {
-                topBlockList[i].Despawn();
+                topBlockList[i].Despawn(true);
                 breakBool = true;
             }
             if (i < downBlockList.Count)
             {
-                downBlockList[i].Despawn();
+                downBlockList[i].Despawn(true);
                 breakBool = true;
             }
             if (i < rightBlockList.Count)
             {
-                rightBlockList[i].Despawn();
+                rightBlockList[i].Despawn(true);
                 breakBool = true;
             }
             if (i < leftBlockList.Count)
             {
-                leftBlockList[i].Despawn();
+                leftBlockList[i].Despawn(true);
                 breakBool = true;
             }
-            if(!breakBool)
+            if (!breakBool)
             {
                 isLoading = false;
                 yield break;
@@ -501,6 +561,7 @@ public class GameManager : MonoSingleTon<GameManager>
 
     private void SetXPlusPos()
     {
+        
         Block newBlock = null;
         int xPos;
         int x = player.xPos;
