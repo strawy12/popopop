@@ -22,6 +22,7 @@ public class Score : Block
 
     public override void Despawn(bool colorChanged = false)
     {
+        SoundManager.Inst.SetEffectSound(5);
         gameObject.SetActive(false);
         GameManager.Inst.PoolEnqueue(EObjectType.score, gameObject);
         GameManager.Inst.ScorePositionEmpty(xPos, yPos);

@@ -6,6 +6,11 @@ using DG.Tweening;
 
 public class Player : Block
 {
+    public void Start()
+    {
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        GameManager.Inst.Image.SetSpritePlayer(spriteRenderer);
+    }
     public override void SetSpawnCoords()
     {
         transform.localScale = Vector3.zero;

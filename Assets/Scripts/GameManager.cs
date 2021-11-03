@@ -42,6 +42,7 @@ public class GameManager : MonoSingleTon<GameManager>
     private Dictionary<EObjectType, Queue<GameObject>> poolingDict = new Dictionary<EObjectType, Queue<GameObject>>();
     private bool isLoading = false;
     private bool isGameOver = false;
+    private int soundNum = 0;
     private int score = 0;
     public UIManager UI { get { return uiManager; } }
     public ImageManager Image { get { return imageManager; } }
@@ -55,6 +56,13 @@ public class GameManager : MonoSingleTon<GameManager>
         {
             isGameOver = true;
             UI.ActiveGameOVerPanal(true);
+            SoundManager.Inst.StopBGM();
+            SoundManager.Inst.SetEffectSound(4);
+        }
+
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            UI.ActiveQuitPanal(true);
         }
     }
     private void Awake()
@@ -63,6 +71,8 @@ public class GameManager : MonoSingleTon<GameManager>
         imageManager = GetComponent<ImageManager>();
         poolingDict.Add(EObjectType.block, new Queue<GameObject>());
         poolingDict.Add(EObjectType.score, new Queue<GameObject>());
+        SoundManager.Inst.SetBGM(0);
+        soundNum = PlayerPrefs.GetInt("SpriteNum") == 0 ? 2 : 3;
     }
     private void Start()
     {
@@ -73,6 +83,7 @@ public class GameManager : MonoSingleTon<GameManager>
 
         isLoading = false;
     }
+
 
     private IEnumerator SpawnStartBlock()
     {
@@ -110,7 +121,7 @@ public class GameManager : MonoSingleTon<GameManager>
         int bonus = Random.Range(1, 11);
         Block block = null;
         nums = RandomNumPick();
-
+        SoundManager.Inst.SetEffectSound(6);
         if (poolingDict[EObjectType.block].Count > 0)
         {
             block = poolingDict[EObjectType.block].Dequeue().GetComponent<Block>();
@@ -259,59 +270,6 @@ public class GameManager : MonoSingleTon<GameManager>
 
     }
 
-    public void Pull()
-    {
-        Block newBlock = null;
-        Block mainBlock = null;
-        int xPos = 0;
-        int x = player.xPos + 1;
-        int y = player.yPos;
-        int nestingCnt = 0;
-
-        for (int i = 4; i >= x; i--)
-        {
-            if (!CheckBlock(i, y) && blockPosition[i, y] != player)
-            {
-                if (blockPosition[i, y].isNesting)
-                {
-                    xPos = CheckXMinus(i, y);
-                    newBlock = blockPosition[i, y];
-                    blockPosition[i, y] = null;
-                    blockPosition[xPos, y] = newBlock;
-                    newBlock.xPos = xPos;
-                    newBlock.yPos = y;
-                    newBlock.SetMoveCoords();
-                    continue;
-                }
-
-                if (mainBlock == null)
-                {
-
-                    mainBlock = blockPosition[i, y];
-                    mainBlock.xPos = x;
-                    mainBlock.yPos = y;
-                }
-                else
-                {
-                    newBlock = blockPosition[i, y];
-                    blockPosition[i, y] = null;
-                    newBlock.xPos = x;
-                    newBlock.yPos = y;
-                    newBlock.SetMoveCoords();
-                    newBlock.Despawn();
-                    nestingCnt++;
-                }
-
-            }
-        }
-        if(mainBlock != null)
-        {
-            mainBlock.nestingCnt = nestingCnt;
-            mainBlock.isNesting = true;
-            blockPosition[x, y] = mainBlock;
-            mainBlock.SetMoveCoords();
-        }
-    }
 
     public IEnumerator MoveBlock(bool isHV, bool isPlma)
     {
@@ -320,6 +278,8 @@ public class GameManager : MonoSingleTon<GameManager>
         int playerPosX = player.xPos;
         int playerPosY = player.yPos;
         int sideWallNum = 0;
+        SoundManager.Inst.SetPlayerEffectSound(soundNum);
+
         if (isHV)
         {
             if (isPlma)
@@ -376,6 +336,16 @@ public class GameManager : MonoSingleTon<GameManager>
             }
         }
     }
+
+    public void SetEffect(int num)
+    {
+        SoundManager.Inst.SetEffectSound(num);
+    }
+    public void SetBGM(int num)
+    {
+        SoundManager.Inst.SetBGM(num);
+    }
+
     private bool GameOver()
     {
         for (int i = 0; i < 5; i++)
@@ -416,6 +386,7 @@ public class GameManager : MonoSingleTon<GameManager>
         }
         if (cnt == 5)
         {
+            SoundManager.Inst.SetEffectSound(0);
             for (int j = 0; j < 5; j++)
             {
                 newBlock = blockPosition[i, j];
@@ -425,7 +396,6 @@ public class GameManager : MonoSingleTon<GameManager>
                     BonusActive();
                 }
                 newBlock.Despawn();
-                SpawnScore(i, j);
             }
             CheckBonus();
         }
@@ -449,6 +419,7 @@ public class GameManager : MonoSingleTon<GameManager>
         }
         if (cnt == 5)
         {
+            SoundManager.Inst.SetEffectSound(0);
             for (int j = 0; j < 5; j++)
             {
                 newBlock = blockPosition[j, i];
@@ -458,7 +429,6 @@ public class GameManager : MonoSingleTon<GameManager>
                     BonusActive();
                 }
                 newBlock.Despawn();
-                SpawnScore(j, i);
             }
             CheckBonus();
         }
@@ -496,6 +466,7 @@ public class GameManager : MonoSingleTon<GameManager>
         List<Block> rightBlockList = new List<Block>();
         List<Block> downBlockList = new List<Block>();
         bool breakBool = false;
+        bool checkPop = false;
         isLoading = true;
         for (int i = 0; i < 5; i++)
         {
@@ -527,23 +498,28 @@ public class GameManager : MonoSingleTon<GameManager>
 
         for (int i = 0; i < 5; i++)
         {
+
             if (i < topBlockList.Count)
             {
+                checkPop = true;
                 topBlockList[i].Despawn(true);
                 breakBool = true;
             }
             if (i < downBlockList.Count)
             {
+                checkPop = true;
                 downBlockList[i].Despawn(true);
                 breakBool = true;
             }
             if (i < rightBlockList.Count)
             {
+                checkPop = true;
                 rightBlockList[i].Despawn(true);
                 breakBool = true;
             }
             if (i < leftBlockList.Count)
             {
+                checkPop = true;
                 leftBlockList[i].Despawn(true);
                 breakBool = true;
             }
@@ -552,7 +528,17 @@ public class GameManager : MonoSingleTon<GameManager>
                 isLoading = false;
                 yield break;
             }
+            if(checkPop)
+            {
+                SoundManager.Inst.SetEffectSound(0);
+            }
+            else
+            {
+                continue;
+            }
+
             yield return new WaitForSeconds(0.5f);
+            breakBool = false;
         }
         isLoading = false;
     }
@@ -561,7 +547,7 @@ public class GameManager : MonoSingleTon<GameManager>
 
     private void SetXPlusPos()
     {
-        
+
         Block newBlock = null;
         int xPos;
         int x = player.xPos;

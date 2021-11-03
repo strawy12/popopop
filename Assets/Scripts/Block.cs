@@ -143,7 +143,7 @@ public class Block : MonoBehaviour
     {
         spriteRenderer.enabled = false;
 
-        if(colorChanged)
+        if (colorChanged)
         {
             SetEffectColor(Color.cyan);
         }
