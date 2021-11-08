@@ -13,6 +13,7 @@ public class MenuManager : MonoBehaviour
     [SerializeField] private Slider effectController;
     [SerializeField] private Toggle bgmToggle;
     [SerializeField] private Toggle effectToggle;
+    [SerializeField] private Toggle playerEffectToggle;
     [SerializeField] private GameObject quitPanal = null;
 
     void Start()
@@ -20,13 +21,14 @@ public class MenuManager : MonoBehaviour
         if (PlayerPrefs.GetInt("SpriteNum", 100) == 100)
         {
             PlayerPrefs.SetInt("SpriteNum", 0);
-            return;
         }
+
         storeImages[PlayerPrefs.GetInt("SpriteNum")].color = Color.gray;
         bgmController.value = SoundManager.Inst.GetBGMVolume();
         effectController.value = SoundManager.Inst.GetEffectVolume();
         bgmToggle.isOn = SoundManager.Inst.GetBGMMute();
         effectToggle.isOn = SoundManager.Inst.GetEffectMute();
+        playerEffectToggle.isOn = SoundManager.Inst.GetPlayerEffectMute();
         SoundManager.Inst.SetBGM(1);
     }
 
@@ -59,6 +61,10 @@ public class MenuManager : MonoBehaviour
     public void EffectMute(bool isMute)
     {
         SoundManager.Inst.EffectMute(isMute);
+    }
+    public void PlayerEffectMute(bool isMute)
+    {
+        SoundManager.Inst.PlayerEffectMute(isMute);
     }
     public void OnCkickQuit()
     {

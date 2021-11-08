@@ -17,6 +17,7 @@ public class UIManager : MonoBehaviour
     [SerializeField] private Slider effectController;
     [SerializeField] private Toggle bgmToggle;
     [SerializeField] private Toggle effectToggle;
+    [SerializeField] private Toggle playerEffectToggle;
 
     private Text[] bonusText = null;
     private SpriteRenderer[] sideWall = null;
@@ -32,6 +33,9 @@ public class UIManager : MonoBehaviour
         effectController.value = SoundManager.Inst.GetEffectVolume();
         bgmToggle.isOn = SoundManager.Inst.GetBGMMute();
         effectToggle.isOn = SoundManager.Inst.GetEffectMute();
+        playerEffectToggle.isOn = SoundManager.Inst.GetPlayerEffectMute();
+
+        highScoreText.text = string.Format("HighScore: {0}", PlayerPrefs.GetInt("HighScore"));
     }
 
     public T[] GetComponents<T>(GameObject gameObject)
@@ -63,6 +67,10 @@ public class UIManager : MonoBehaviour
     public void EffectMute(bool isMute)
     {
         SoundManager.Inst.EffectMute(isMute);
+    }
+    public void PlayerEffectMute(bool isMute)
+    {
+        SoundManager.Inst.PlayerEffectMute(isMute);
     }
 
     public void ActiveGameOVerPanal(bool isActive)
@@ -101,7 +109,7 @@ public class UIManager : MonoBehaviour
     public void SetScoreText(int score)
     {
         scoreText.text = string.Format("Score: {0}", score);
-        if (PlayerPrefs.GetInt("HighScore") < score)
+        if (PlayerPrefs.GetInt("HighScore", 0) < score)
         {
             PlayerPrefs.SetInt("HighScore", score);
             highScoreText.text = string.Format("HighScore: {0}", PlayerPrefs.GetInt("HighScore"));

@@ -31,6 +31,7 @@ public class SoundManager : MonoSingleTon<SoundManager>
         playerEffectAudio.volume = PlayerPrefs.GetFloat("EffectAudio", 0.5f);
         effectAudio.mute = GetBGMMute();
         effectAudio.mute = GetEffectMute();
+        playerEffectAudio.mute = GetPlayerEffectMute();
     }
 
     public float GetBGMVolume()
@@ -39,11 +40,15 @@ public class SoundManager : MonoSingleTon<SoundManager>
     }
     public bool GetBGMMute()
     {
-        return PlayerPrefs.GetInt("BgmMute") == 0;
+        return PlayerPrefs.GetInt("BgmMute", 1) == 0;
     }
     public bool GetEffectMute()
     {
-        return PlayerPrefs.GetInt("EffectMute") == 0;
+        return PlayerPrefs.GetInt("EffectMute", 1) == 0;
+    }
+    public bool GetPlayerEffectMute()
+    {
+        return PlayerPrefs.GetInt("EffectMute", 1) == 0 || PlayerPrefs.GetInt("PlayerMute", 1) == 0;
     }
     public float GetEffectVolume()
     {
@@ -79,7 +84,14 @@ public class SoundManager : MonoSingleTon<SoundManager>
         PlayerPrefs.SetInt("EffectMute", isMute ? 0 : 1);
         
         effectAudio.mute = PlayerPrefs.GetInt("EffectMute", 1) == 0;
-        playerEffectAudio.mute = PlayerPrefs.GetInt("EffectMute", 1) == 0;
+        playerEffectAudio.mute = PlayerPrefs.GetInt("EffectMute", 1) == 0 || PlayerPrefs.GetInt("PlayerMute", 1) == 0;
+    }
+
+    public void PlayerEffectMute(bool isMute)
+    {
+        PlayerPrefs.SetInt("PlayerMute", isMute ? 0 : 1);
+
+        playerEffectAudio.mute = PlayerPrefs.GetInt("EffectMute", 1) == 0 || PlayerPrefs.GetInt("PlayerMute", 1) == 0;
     }
 
 
